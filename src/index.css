@@ -1,0 +1,44 @@
+@import "tailwindcss";
+@source "./components/**/*.jsx";
+@source "./pages/**/*.jsx";
+@source "./App.jsx";
+
+.district-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: white !important;
+  font-weight: 700;
+  font-size: 12px;
+}
+.district-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.district-tooltip::before {
+  display: none !important;
+}
+
+.district-marker {
+  text-align: center;
+}
+
+.district-name {
+  color: rgb(0, 0, 0);
+  font-size: 18px;
+  font-weight: 700;
+  text-shadow: 0 2px 6px rgba(0,0,0,.35);
+}
+
+.district-count {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 6px 14px;
+  border-radius: 10px;
+  background: white;
+  color: #1f2937;
+  font-weight: 700;
+  font-size: 16px;
+}

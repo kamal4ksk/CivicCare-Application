@@ -1,0 +1,611 @@
+import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+  HiOutlineHome, 
+  HiOutlineChatBubbleLeft, 
+  HiOutlineMapPin, 
+  HiOutlineUsers, 
+  HiOutlineBookOpen,
+  HiOutlineBell,
+  HiPlus,
+  HiBars3,
+  HiXMark,
+  HiOutlinePhoto,
+  HiOutlinePaperAirplane
+} from 'react-icons/hi2';
+import { getNotifications, saveNotifications } from '../utils/notifications';
+import { Bell } from "lucide-react";
+
+// Global module-scope tracking variable to retain tab state across unmounts/mounts
+let lastTabIndex = null;
+
+export default function UserHeader({ onMenuClick }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isReportModalOpen, setIsReportModalOpen] = React.useState(false);
+  const [toastMessage, setToastMessage] = React.useState(null);
+  const [locationInput, setLocationInput] = React.useState("");
+  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
+  const [isAccountOpen, setIsAccountOpen] = React.useState(false);
+ 
+ const [notifications, setNotifications] = React.useState(() => getNotifications());
+
+// TEMPORARY TEST
+const unreadCount = 2;
+
+
+  const notificationsRef = React.useRef(null);
+  const accountRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const handleUpdate = () => {
+      setNotifications(getNotifications());
+    };
+    window.addEventListener("notifications_updated", handleUpdate);
+    return () => {
+      window.removeEventListener("notifications_updated", handleUpdate);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        notificationsRef.current &&
+        !notificationsRef.current.contains(event.target)
+      ) {
+        setIsNotificationsOpen(false);
+      }
+      if (accountRef.current && !accountRef.current.contains(event.target)) {
+        setIsAccountOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const markAllRead = () => {
+    const updated = notifications.map((notification) => ({ ...notification, unread: false }));
+    setNotifications(updated);
+    saveNotifications(updated);
+  };
+
+  const markSingleRead = (id) => {
+    const updated = notifications.map((notification) =>
+      notification.id === id ? { ...notification, unread: false } : notification
+    );
+    setNotifications(updated);
+    saveNotifications(updated);
+  };
+
+  const navItems = [
+    { name: "Home", icon: HiOutlineHome, path: "/home" },
+    { name: "Feed", icon: HiOutlineChatBubbleLeft, path: "/feedPage" },
+    { name: "Map", icon: HiOutlineMapPin, path: "/MapPage" },
+    { name: "Communities", icon: HiOutlineUsers, path: "/CommunityPage" },
+    { name: "Resources", icon: HiOutlineBookOpen, path: "/ResourcePage" },
+  ];
+
+  const targetTab = navItems.findIndex(item => location.pathname === item.path) === -1 
+    ? 0 
+    : navItems.findIndex(item => location.pathname === item.path);
+
+  // Initialize pillTab state to the last visited tab position to trigger slide on mount
+  const [pillTab, setPillTab] = React.useState(() => {
+    return lastTabIndex !== null ? lastTabIndex : targetTab;
+  });
+
+  React.useEffect(() => {
+    lastTabIndex = targetTab;
+    
+    // Animate to target position with transition
+    if (pillTab !== targetTab) {
+      const timer = setTimeout(() => {
+        setPillTab(targetTab);
+      }, 50); // Delay slightly for paint
+      return () => clearTimeout(timer);
+    }
+  }, [targetTab, pillTab]);
+
+  const handleNavClick = (path, index) => {
+    lastTabIndex = targetTab; // Store the current tab position right before we switch
+    setIsMobileMenuOpen(false); // Close mobile menu if open
+    navigate(path);
+  };
+
+
+  return (
+    <header className="w-full bg-white border-b border-slate-100 font-sans antialiased sticky top-0 z-50 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-[1216px] mx-auto h-[64px] flex items-center justify-between">        
+        
+        {/* Left Side: Brand Logo Layout */}
+        <div 
+          onClick={() => navigate('/home')} 
+          className="flex items-center space-x-2.5 shrink-0 select-none cursor-pointer"
+        >
+          {/* Hamburger Menu on Mobile viewports */}
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+              onMenuClick && onMenuClick();
+            }}
+            className="min-[1025px]:hidden p-1.5 -ml-1 text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-slate-100/80 rounded-lg cursor-pointer transition-colors duration-200 focus:outline-none"
+            aria-label="Toggle navigation menu"
+          >
+            {isMobileMenuOpen ? (
+              <HiXMark className="w-5.5 h-5.5 stroke-[2]" />
+            ) : (
+              <HiBars3 className="w-5.5 h-5.5 stroke-[2]" />
+            )}
+          </button>
+
+          <div className="w-[40px] h-[40px] rounded-[14px] bg-gradient-to-br from-[#155DFC] to-[#9810FA] flex items-center justify-center shadow-xs">
+            <span className="text-white font-bold text-[17px] tracking-tight select-none">CC</span>
+          </div>
+          {/* exact implementation of your gradient styling rules applied directly via text clip formatting */}
+          <span className="w-[90.7969px] h-[28px] border-0 border-solid border-[rgba(0,0,0,0.1)] block box-border bg-gradient-to-r from-[rgb(21,93,252)] to-[rgb(152,16,250)] bg-clip-text text-[20px] font-bold leading-[1.4] text-[rgba(0,0,0,0)] tracking-tight">
+            CivicCare
+          </span>
+        </div>
+
+        {/* Middle Side: Navigation Links with slow down duration transition states */}
+        <nav className="hidden min-[1025px]:flex items-center relative bg-slate-50 rounded-[18px] p-1">
+
+          {/* Sliding Active Background */}
+          <div
+            className="absolute top-1 left-1 h-[42px] rounded-[14px]
+                       bg-gradient-to-r from-[#155DFC] to-[#9810FA]
+                       transition-all duration-[400ms] ease-in-out"
+            style={{
+              width:
+                pillTab === 0
+                  ? "110px"
+                  : pillTab === 1
+                  ? "110px"
+                  : pillTab === 2
+                  ? "110px"
+                  : pillTab === 3
+                  ? "150px"
+                  : "140px",
+
+              transform:
+                pillTab === 0
+                  ? "translateX(0px)"
+                  : pillTab === 1
+                  ? "translateX(110px)"
+                  : pillTab === 2
+                  ? "translateX(220px)"
+                  : pillTab === 3
+                  ? "translateX(330px)"
+                  : "translateX(480px)",
+            }}
+          />
+
+          {navItems.map((item, index) => {
+            const Icon = item.icon;
+
+            return (
+              <button
+                key={item.name}
+                onClick={() => handleNavClick(item.path, index)}
+                className={`relative z-10 flex items-center justify-center gap-2
+                  h-[42px]
+                  font-semibold
+                  focus:outline-none
+                  transition-all duration-300
+                  ${
+                    index === 0
+                      ? "w-[110px]"
+                      : index === 1
+                      ? "w-[110px]"
+                      : index === 2
+                      ? "w-[110px]"
+                      : index === 3
+                      ? "w-[150px]"
+                      : "w-[140px]"
+                  }
+                  ${
+                    pillTab === index
+                      ? "text-white"
+                      : "text-slate-600 hover:text-[#155DFC]"
+                  }
+                `}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{item.name}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Right Side: Action Controls & User Account Profile */}
+        <div className="flex items-center space-x-4 shrink-0">
+          
+          {/* Post Button */}
+          <button onClick={() => setIsReportModalOpen(true)} className="hidden sm:inline-flex items-center space-x-1.5 px-5 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] hover:opacity-95 text-white font-bold text-sm rounded-full shadow-md shadow-blue-500/10 transform active:scale-98 transition-all duration-300 cursor-pointer">
+            <HiPlus className="w-4 h-4 stroke-[3]" />
+            <span>Post</span>
+          </button>
+
+          {/* Notifications */}
+          <div className="relative" ref={notificationsRef}>
+         <button
+  onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+  className="
+    relative
+    w-[42px]
+    h-[42px]
+    flex
+    items-center
+    justify-center
+    rounded-full
+    bg-white
+    border
+    border-[#E5E7EB]
+    shadow-[0_1px_4px_rgba(0,0,0,0.08)]
+    hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)]
+    transition-all
+    duration-200
+  "
+>
+  <Bell
+    size={20}
+    strokeWidth={2}
+    className="text-[#64748B]"
+  />
+
+  {unreadCount > 0 && (
+    <span
+      className="
+        absolute
+        -top-[3px]
+        -right-[3px]
+        w-[18px]
+        h-[18px]
+        rounded-full
+        bg-[#EF4444]
+        border-[2px]
+        border-white
+        text-[10px]
+        text-white
+        font-bold
+        flex
+        items-center
+        justify-center
+      "
+    >
+      {unreadCount}
+    </span>
+  )}
+</button>
+
+            {isNotificationsOpen && (
+              <div 
+className="absolute right-0 top-full mt-3
+w-[380px]
+bg-white
+rounded-3xl
+border border-slate-200
+shadow-2xl
+overflow-hidden
+z-[100]"              >
+                {/* Header */}
+<div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">                  <span className="text-sm font-bold text-slate-800">Notifications</span>
+                  <button 
+                    onClick={markAllRead}
+                    className="text-[#9810FA] hover:opacity-90 font-bold text-xs flex items-center gap-1 cursor-pointer transition-opacity duration-200"
+                  >
+                    <svg className="w-3.5 h-3.5 stroke-[#9810FA]" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 6 7 17l-5-5"/>
+                      <path d="m22 10-7.5 7.5-3.5-3.5"/>
+                    </svg>
+                    Mark all read
+                  </button>
+                </div>
+
+                {/* List */}
+<div className="max-h-[320px] overflow-y-auto">
+                    {notifications.map(notification => (
+                    <div 
+                      key={notification.id} 
+                      onClick={() => markSingleRead(notification.id)}
+className={`
+flex
+gap-3
+p-4
+cursor-pointer
+border-b
+border-slate-100
+hover:bg-slate-50
+
+${notification.unread ? "bg-violet-50" : "bg-white"}
+`}                    >
+                      {notification.unread ? (
+<div
+className={`
+w-2
+h-2
+rounded-full
+mt-2
+
+${notification.unread
+? "bg-violet-500"
+: "bg-transparent"}
+`}
+/>                      ) : (
+                        <div className="w-2 h-2 shrink-0" /> // Spacer to preserve alignment
+                      )}
+                      <div className="flex flex-col text-left">
+                        <h3 className="text-lg font-semibold text-slate-800">
+    Notifications
+</h3>
+                        <span className="text-[11px] text-slate-500 font-medium mt-1 leading-normal">
+                          {notification.description}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-bold mt-1">
+                          {notification.time}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  {notifications.length === 0 && (
+                    <div className="text-center py-6 text-slate-400 text-xs font-semibold">
+                      No notifications
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+<div className="border-t border-slate-100 py-4 text-center">
+                    <button 
+                    onClick={() => {
+                      setIsNotificationsOpen(false);
+                      navigate("/NotificationsPage");
+                    }}
+                    className="text-[#9810FA] hover:opacity-90 font-bold text-xs inline-flex items-center gap-1 transition-opacity duration-200 cursor-pointer"
+                  >
+                    See all notifications &rarr;
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* User Account Panel Profile Block */}
+          <div className="relative" ref={accountRef}>
+            <button
+              type="button"
+              onClick={() => setIsAccountOpen((open) => !open)}
+              className="flex items-center space-x-2.5 cursor-pointer group select-none focus:outline-none"
+            >
+              <div className="w-[36px] h-[36px] rounded-full bg-gradient-to-br from-[#155DFC] to-[#9810FA] flex items-center justify-center text-white text-xs font-black tracking-tight shadow-2xs transition-transform duration-500 group-hover:scale-105">
+                DU
+              </div>
+              <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 hidden sm:inline max-w-[140px] truncate transition-colors duration-500">
+                Demo User
+              </span>
+            </button>
+
+            {isAccountOpen && (
+              <div className="absolute right-0 mt-2 w-[220px] rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden z-50">
+                <div className="px-4 py-4 border-b border-slate-100">
+                  <p className="text-sm font-bold text-slate-900">Demo User</p>
+                  <p className="text-[11px] text-slate-500">demo@gmail.com</p>
+                </div>
+                <div className="flex flex-col py-2">
+                  <button
+                    type="button"
+                    className="text-left px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    onClick={() => {
+                      setIsAccountOpen(false);
+                      navigate('/MyPosts');
+                    }}
+                  >
+                    My Posts
+                  </button>
+                  <button
+                    type="button"
+                    className="text-left px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                    onClick={() => {
+                      setIsAccountOpen(false);
+                      navigate('/admin');
+                    }}
+                  >
+                    Admin Panel
+                  </button>
+                </div>
+                <div className="px-4 py-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    className="w-full text-left text-sm font-bold text-red-600 hover:bg-slate-50 px-3 py-2 rounded-xl transition-colors"
+                    onClick={() => setIsAccountOpen(false)}
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Collapsible Mobile Menu */}
+      <div className={`min-[1025px]:hidden overflow-hidden transition-all duration-300 ease-in-out ${isMobileMenuOpen ? 'max-h-[380px] border-t border-slate-100 py-3' : 'max-h-0'}`}>
+        <div className="flex flex-col space-y-1">
+          {navItems.map((item, index) => {
+            const Icon = item.icon;
+            const isActive = targetTab === index;
+            return (
+              <button
+                key={item.name}
+                onClick={() => handleNavClick(item.path, index)}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold text-left transition-all focus:outline-none ${
+                  isActive 
+                    ? 'bg-gradient-to-r from-blue-50/70 to-indigo-50/70 text-indigo-600 border-l-4 border-indigo-600 pl-3' 
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-indigo-600 border-l-4 border-transparent'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+                <span>{item.name}</span>
+              </button>
+            );
+          })}
+          {/* Mobile Action Controls */}
+          <div className="pt-3 px-4 border-t border-slate-100 flex flex-col gap-3">
+            <button onClick={() => setIsReportModalOpen(true)} className="flex items-center justify-center space-x-2 w-full py-3 bg-gradient-to-r from-[#155DFC] to-[#9810FA] text-white font-bold text-sm rounded-xl shadow-md shadow-blue-500/10 focus:outline-none">
+              <HiPlus className="w-4 h-4 stroke-[3]" />
+              <span>Create Post</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      {/* Report a Concern Modal */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300">
+          <div className="absolute inset-0 cursor-default" onClick={() => { setIsReportModalOpen(false); setLocationInput(""); }} />
+          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden relative shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] z-10 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between text-left">
+              <h3 className="text-base font-bold text-slate-800">Report a Concern</h3>
+              <button 
+                type="button"
+                onClick={() => { setIsReportModalOpen(false); setLocationInput(""); }}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 cursor-pointer focus:outline-none"
+              >
+                <HiXMark className="w-5.5 h-5.5" />
+              </button>
+            </div>
+            
+            {/* Body */}
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              setIsReportModalOpen(false);
+              setLocationInput("");
+              setToastMessage("Report submitted successfully! 🚀");
+              setTimeout(() => setToastMessage(null), 3000);
+            }} className="p-5 overflow-y-auto flex flex-col gap-4 text-left">
+              {/* Category */}
+              <div className="flex flex-col">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Category</label>
+                <select className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all">
+                  <option value="Other">Other</option>
+                  <option value="Infrastructure">Infrastructure</option>
+                  <option value="Water">Water</option>
+                  <option value="Electricity">Electricity</option>
+                  <option value="Garbage">Garbage</option>
+                  <option value="Corruption">Corruption</option>
+                  <option value="Safety">Safety</option>
+                </select>
+              </div>
+
+              {/* Title */}
+              <div className="flex flex-col">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Title</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="Brief title for your concern"
+                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                />
+              </div>
+
+              {/* Location */}
+              <div className="flex flex-col">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Location</label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <HiOutlineMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 stroke-[2.5]" />
+                    <input 
+                      type="text"
+                      required
+                      value={locationInput}
+                      onChange={(e) => setLocationInput(e.target.value)}
+                      placeholder="e.g., Main Street, Downtown"
+                      className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all"
+                    />
+                  </div>
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      if (navigator.geolocation) {
+                        navigator.geolocation.getCurrentPosition(
+                          (position) => {
+                            setLocationInput(`Kochi, Kerala (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`);
+                          },
+                          (error) => {
+                            setLocationInput("Vyttila, Kochi, Ernakulam");
+                          }
+                        );
+                      } else {
+                        setLocationInput("Vyttila, Kochi, Ernakulam");
+                      }
+                    }}
+                    className="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 flex items-center gap-1.5 active:scale-98 transition-all focus:outline-none shrink-0"
+                  >
+                    <span className="transform rotate-45 flex items-center">
+                      <HiOutlinePaperAirplane className="w-3.5 h-3.5 stroke-[2.5]" />
+                    </span>
+                    GPS
+                  </button>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div className="flex flex-col">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Description</label>
+                <textarea 
+                  required
+                  placeholder="Describe the issue in detail..."
+                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all min-h-[90px] resize-none"
+                />
+              </div>
+
+              {/* Add Photo */}
+              <div className="flex flex-col">
+                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Add Photo (Optional)</label>
+                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center cursor-pointer hover:bg-slate-50/50 hover:border-slate-300 transition-all flex flex-col items-center justify-center gap-1.5 select-none">
+                  <div className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
+                    <HiOutlinePhoto className="w-5 h-5 stroke-[2]" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-700">Click to upload photo</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">PNG, JPG up to 10MB</span>
+                </div>
+              </div>
+
+              {/* Footer Buttons */}
+              <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
+                <button 
+                  type="button"
+                  onClick={() => { setIsReportModalOpen(false); setLocationInput(""); }}
+                  className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 active:scale-98 transition-all cursor-pointer focus:outline-none"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit"
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] hover:opacity-95 rounded-xl text-xs font-bold text-white active:scale-98 transition-all cursor-pointer focus:outline-none"
+                >
+                  Submit Report
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed bottom-6 right-6 z-[9999] animate-in fade-in slide-in-from-bottom-5 duration-300">
+          <div className="bg-slate-900/95 text-white text-xs font-semibold py-3.5 px-5 rounded-2xl shadow-xl flex items-center gap-3 backdrop-blur-xs border border-slate-800">
+            <span>{toastMessage}</span>
+          </div>
+        </div>
+      )}
+    </header>
+  );
+}
