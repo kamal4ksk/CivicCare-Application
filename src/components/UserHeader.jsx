@@ -6,7 +6,6 @@ import {
   HiOutlineMapPin, 
   HiOutlineUsers, 
   HiOutlineBookOpen,
-  HiOutlineBell,
   HiPlus,
   HiBars3,
   HiXMark,
@@ -31,8 +30,7 @@ export default function UserHeader({ onMenuClick }) {
  
  const [notifications, setNotifications] = React.useState(() => getNotifications());
 
-// TEMPORARY TEST
-const unreadCount = 2;
+  const unreadCount = notifications.filter(n => n.unread).length;
 
 
   const notificationsRef = React.useRef(null);
@@ -82,10 +80,10 @@ const unreadCount = 2;
 
   const navItems = [
     { name: "Home", icon: HiOutlineHome, path: "/home" },
-    { name: "Feed", icon: HiOutlineChatBubbleLeft, path: "/feedPage" },
-    { name: "Map", icon: HiOutlineMapPin, path: "/MapPage" },
-    { name: "Communities", icon: HiOutlineUsers, path: "/CommunityPage" },
-    { name: "Resources", icon: HiOutlineBookOpen, path: "/ResourcePage" },
+    { name: "Feed", icon: HiOutlineChatBubbleLeft, path: "/feed" },
+    { name: "Map", icon: HiOutlineMapPin, path: "/map" },
+    { name: "Communities", icon: HiOutlineUsers, path: "/communities" },
+    { name: "Resources", icon: HiOutlineBookOpen, path: "/resources" },
   ];
 
   const targetTab = navItems.findIndex(item => location.pathname === item.path) === -1 
@@ -363,7 +361,7 @@ ${notification.unread
                     <button 
                     onClick={() => {
                       setIsNotificationsOpen(false);
-                      navigate("/NotificationsPage");
+                      navigate("/notifications");
                     }}
                     className="text-[#9810FA] hover:opacity-90 font-bold text-xs inline-flex items-center gap-1 transition-opacity duration-200 cursor-pointer"
                   >
@@ -401,7 +399,7 @@ ${notification.unread
                     className="text-left px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                     onClick={() => {
                       setIsAccountOpen(false);
-                      navigate('/MyPosts');
+                      navigate('/my-posts');
                     }}
                   >
                     My Posts

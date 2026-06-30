@@ -118,7 +118,7 @@ export default function MyPostsPage() {
         </div>
 
         {/* Stats Row */}
-        <div className="mb-8 grid grid-cols-5 gap-4">
+        <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm">
             <h3 className="text-sm font-semibold text-slate-600">Total Posts</h3>
             <p className="text-3xl font-bold text-slate-900 mt-3">{metrics.total}</p>

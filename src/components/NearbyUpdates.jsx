@@ -1,80 +1,30 @@
-import { FiMapPin } from "react-icons/fi";
-import NearbyEventCard from "./NearbyEventCard";
+import React from 'react';
+import { HiOutlineMapPin } from 'react-icons/hi2';
+import NearbyEventCard from './NearbyEventCard';
 
-function NearbyUpdates() {
+export default function NearbyUpdates() {
+  const updates = [
+    { id: 1, title: "Town Hall Meeting", description: "Discuss civic improvements with local officials", location: "City Hall", date: "June 10, 2026", type: "Event", typeColor: "bg-purple-500" },
+    { id: 2, title: "Free Health Checkup Camp", description: "Community health initiative by Municipal Corp", location: "Community Center", date: "June 15, 2026", type: "Service", typeColor: "bg-emerald-500" },
+    { id: 3, title: "Road Maintenance Notice", description: "Main Street will be under repair", location: "Main Street", date: "Starting June 8", type: "Announcement", typeColor: "bg-cyan-500" }
+  ];
+
   return (
-    <div className="rounded-2xl bg-white p-4">
-
-      {/* Header */}
-      <div className="mb-4 flex items-center gap-3">
-
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500">
-          <FiMapPin
-            size={16}
-            className="text-white"
-          />
+    <div className="w-full bg-white rounded-3xl border border-slate-100 p-5 shadow-[0_10px_30px_-15px_rgba(0,0,0,0.03)] text-left flex flex-col">
+      <div className="flex items-center space-x-2 mb-4">
+        <div className="w-8 h-8 rounded-xl bg-blue-500 flex items-center justify-center text-white shadow-xs">
+          <HiOutlineMapPin className="w-4 h-4 stroke-[2.2]" />
         </div>
-
-        <h2 className="text-[15px] font-semibold text-gray-800">
-          Nearby Updates
-        </h2>
-
+        <h3 className="text-base font-black text-slate-900 tracking-tight">Nearby Updates</h3>
+      </div>
+      
+      <div className="space-y-3 flex-1">
+        {updates.map(upd => <NearbyEventCard key={upd.id} {...upd} />)}
       </div>
 
-      <div className="space-y-4">
-
-        <NearbyEventCard
-          title="Town Hall Meeting"
-          description="Discuss civic improvements with local officials"
-          location="City Hall"
-          date="June 10, 2026"
-          tag="Event"
-          bgColor="bg-purple-50"
-          tagColor="bg-purple-500"
-        />
-
-        <NearbyEventCard
-          title="Free Health Checkup Camp"
-          description="Community health initiative by Municipal Corp"
-          location="Community Center"
-          date="June 15, 2026"
-          tag="Service"
-          bgColor="bg-green-50"
-          tagColor="bg-green-500"
-        />
-
-        <NearbyEventCard
-          title="Road Maintenance Notice"
-          description="Main Street will be under repair"
-          location="Main Street"
-          date="Starting June 8"
-          tag="Announcement"
-          bgColor="bg-sky-50"
-          tagColor="bg-sky-500"
-        />
-
-      </div>
-
-      {/* Button */}
-      <button
-        className="
-          mt-4
-          w-full
-          rounded-xl
-          bg-gray-100
-          py-2.5
-          text-xs
-          font-medium
-          text-gray-700
-          transition
-          hover:bg-gray-200
-        "
-      >
+      <button className="w-full mt-4 py-3 bg-slate-50 hover:bg-slate-100/80 text-slate-700 font-bold text-xs rounded-xl transition-colors cursor-pointer text-center">
         View All Updates
       </button>
-
     </div>
   );
 }
-
-export default NearbyUpdates;
