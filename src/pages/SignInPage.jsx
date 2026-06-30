@@ -16,6 +16,8 @@ export default function SignInPage() {
   password: "",
 });
 
+
+
 const handleChange = (e) => {
   setFormData({
     ...formData,
@@ -77,7 +79,7 @@ const handleLogin = async () => {
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.08)] p-5 sm:p-8">
+        <form onSubmit={(e) => { e.preventDefault(); handleLogin(); }} className="bg-white rounded-[24px] sm:rounded-[32px] border border-slate-100 shadow-[0_25px_80px_-15px_rgba(0,0,0,0.08)] p-5 sm:p-8">
 
           {/* Email */}
           <div className="mb-5">
@@ -123,14 +125,14 @@ const handleLogin = async () => {
               Remember me
             </label>
 
-            <button className="text-sm font-semibold text-blue-600 hover:text-purple-600 text-left sm:text-right">
+            <button type="button" className="text-sm font-semibold text-blue-600 hover:text-purple-600 text-left sm:text-right">
               Forgot Password?
             </button>
           </div>
 
           {/* Sign In Button */}
           <button
-  onClick={handleLogin}
+            type="submit"
             className="w-full h-12 sm:h-14 rounded-2xl bg-gradient-to-r from-[#2b7fff] to-[#9810fa] text-white font-bold flex items-center justify-center gap-2 hover:shadow-lg hover:-translate-y-0.5 transition-all cursor-pointer"
           >
             Sign In
@@ -147,17 +149,17 @@ const handleLogin = async () => {
           </div>
 
           {/* Google Button */}
-         <button className="w-full h-14 rounded-2xl border border-slate-200 bg-white flex items-center justify-center gap-3 hover:bg-slate-50 transition-all">
-  <img
-    src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
-    alt="Google"
-    className="w-5 h-5"
-  />
+          <button type="button" className="w-full h-14 rounded-2xl border border-slate-200 bg-white flex items-center justify-center gap-3 hover:bg-slate-50 transition-all">
+            <img
+              src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+              alt="Google"
+              className="w-5 h-5"
+            />
 
-  <span className="font-semibold text-slate-700">
-    Continue with Google
-  </span>
-</button>
+            <span className="font-semibold text-slate-700">
+              Continue with Google
+            </span>
+          </button>
           {/* Footer */}
           <p className="text-center text-sm text-slate-500 mt-8">
             Don't have an account?{" "}
@@ -168,7 +170,7 @@ const handleLogin = async () => {
               Sign Up
             </Link>
           </p>
-        </div>
+        </form>
       </div>
     </div>
   );

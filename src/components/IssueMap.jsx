@@ -4,6 +4,8 @@ import { HiOutlineMap as MapIcon, HiXMark as CloseIcon } from 'react-icons/hi2';
 import { FiArrowRight, FiArrowUpRight } from 'react-icons/fi';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import Map from "./Map";
+
 
 // Setup Mapbox Token
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
@@ -334,25 +336,12 @@ export default function IssueMap() {
         {/* Viewport Frame Container */}
         <div className="w-full h-[280px] sm:h-[340px] rounded-[24px] overflow-hidden relative shadow-xs border border-slate-200/50">
           
-          {MAPBOX_TOKEN ? (
-            <div ref={mapContainerRef} className="w-full h-full" />
-          ) : (
-            <div className="w-full h-full bg-slate-100/40 flex items-center justify-center relative">
-              <img 
-                src="https://upload.wikimedia.org/wikipedia/commons/1/18/Districts_of_Kerala.png" 
-                alt="Static Kerala Location Viewport Layout" 
-                className="w-full h-full object-contain opacity-40 mix-blend-multiply select-none p-4"
-              />
-              
-              {districtsData.slice(0, 8).map((d) => (
-                <div 
-                  key={d.rank} 
-                  className="absolute w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white shadow-md animate-pulse" 
-                  style={{ top: d.top, left: d.left }}
-                />
-              ))}
-            </div>
-          )}
+          <Map
+            mapView="district"
+            selectedDistrict={null}
+            setSelectedDistrict={() => {}}
+            className="w-full h-full relative z-0"
+          />
 
           {/* Top-Left: Floating Mapped Count Badge */}
           <div className="absolute top-4 left-4 z-10 bg-white/95 backdrop-blur-md border border-slate-100 rounded-xl px-3 py-1.5 shadow-xs select-none">

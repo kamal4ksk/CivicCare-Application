@@ -133,6 +133,7 @@ export default function PostFeed({ posts: propPosts }) {
             sortedPosts.map((post) => (
               <LatestPost
                 key={post.id}
+                id={post.id}
                 tag={post.tag}
                 categoryColor={post.categoryColor}
                 title={post.title}
@@ -143,6 +144,7 @@ export default function PostFeed({ posts: propPosts }) {
                 image={post.image}
                 initialLikes={post.initialLikes}
                 commentCount={post.commentCount}
+                likes={post.likes}
               />
             ))
           ) : (

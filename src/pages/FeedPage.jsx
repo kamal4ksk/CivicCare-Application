@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UserHeader from '../components/UserHeader';
 import CommunityBoard from '../components/CommunityBoard';
@@ -9,6 +9,7 @@ import NearbyUpdates from '../components/NearbyUpdates';
 import MobileNavigation from '../components/MobileNavigation';
 import MobileDrawer from '../components/MobileDrawer';
 import ReportConcernModal from '../components/ReportConcernModal';
+import { getAllPosts } from "../services/postService";
 
 const initialPostsData = [
   {
@@ -81,21 +82,31 @@ const initialPostsData = [
 export default function FeedPage() {
   const navigate = useNavigate();
   const [isReportModalOpen, setIsReportModalOpen] = useState(false);
-  const [userConcerns, setUserConcerns] = useState(() => {
-    const saved = localStorage.getItem('civic_care_user_concerns');
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [userConcerns, setUserConcerns] = useState([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const fetchPosts = async () => {
+    try {
+      const response = await getAllPosts();
+      setUserConcerns(response.data);
+    } catch (error) {
+      console.error("Failed to fetch posts", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
 
   const posts = [
     ...userConcerns.map(concern => {
       let categoryColor = "bg-slate-50 text-slate-600 border-slate-100";
-      let tag = concern.category.toLowerCase();
+      let tag = concern.category ? concern.category.toLowerCase() : "other";
 
-      if (tag === 'bribery') {
+      if (tag === 'bribery' || tag === 'corruption') {
         categoryColor = "bg-rose-50 text-rose-600 border-rose-100";
         tag = "bribe";
-      } else if (tag === 'potholes') {
+      } else if (tag === 'potholes' || tag === 'roads' || tag === 'infrastructure') {
         categoryColor = "bg-orange-50 text-orange-600 border-orange-100";
         tag = "pothole";
       } else if (tag === 'water') {
@@ -104,44 +115,28 @@ export default function FeedPage() {
       } else if (tag === 'electricity') {
         categoryColor = "bg-yellow-50 text-[#B7791F] border-yellow-100/60";
         tag = "electricity";
-      } else if (tag === 'waste') {
+      } else if (tag === 'waste' || tag === 'garbage' || tag === 'sanitation') {
         categoryColor = "bg-emerald-50 text-emerald-600 border-emerald-100";
         tag = "garbage";
       }
 
       return {
-        id: concern.id,
+        id: concern._id,
         tag: tag,
         categoryColor: categoryColor,
         title: concern.title,
         text: concern.description,
-        author: "Fathima",
-        date: concern.date,
+        author: concern.isAnonymous ? "Anonymous User" : (concern.userId?.name || "Citizen"),
+        date: new Date(concern.createdAt).toLocaleDateString('en-GB'),
         location: concern.location,
-        image: concern.photo || null,
-        initialLikes: 1,
-        commentCount: 0
+        image: concern.photo ? `http://localhost:3000${concern.photo}` : null,
+        initialLikes: concern.likes ? concern.likes.length : 0,
+        commentCount: concern.commentCount || 0,
+        likes: concern.likes || []
       };
     }),
     ...initialPostsData
   ];
-
-  const handleSubmitConcern = (newConcern) => {
-    const concernWithMeta = {
-      id: Date.now(),
-      category: newConcern.category,
-      title: newConcern.title,
-      description: newConcern.description,
-      location: newConcern.location,
-      photo: newConcern.photo,
-      date: new Date().toLocaleDateString('en-GB')
-    };
-
-    const updatedConcerns = [concernWithMeta, ...userConcerns];
-    setUserConcerns(updatedConcerns);
-    localStorage.setItem('civic_care_user_concerns', JSON.stringify(updatedConcerns));
-    setIsReportModalOpen(false);
-  };
 
   return (
     <div className="w-full min-h-screen bg-[linear-gradient(to_right_bottom_in_oklab,rgb(239,246,255)_0%,rgb(250,245,255)_50%,rgb(253,242,248)_100%)] flex flex-col items-center justify-start box-border relative text-[16px] font-sans font-normal leading-normal text-[rgb(0,0,0)] antialiased">
@@ -199,7 +194,7 @@ export default function FeedPage() {
       {isReportModalOpen && (
         <ReportConcernModal
           onClose={() => setIsReportModalOpen(false)}
-          onSubmit={handleSubmitConcern}
+          refreshPosts={fetchPosts}
         />
       )}
 

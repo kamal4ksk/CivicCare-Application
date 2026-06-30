@@ -19,6 +19,30 @@ import AdminCategoriesPage from "./pages/AdminCategoriespage";
 import AdminArticlesPage from "./pages/AdminArticlepage";
 import AdminWhatsAppPage from "./pages/AdminWhatsapppage";
 
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    return <Navigate to="/signin" replace />;
+  }
+  return children;
+}
+
+function AdminRoute({ children }) {
+  const adminSession = sessionStorage.getItem("civiccare_admin");
+  if (!adminSession) {
+    return <Navigate to="/admin/login" replace />;
+  }
+  return children;
+}
+
+function AdminIndexRoute() {
+  const adminSession = sessionStorage.getItem("civiccare_admin");
+  if (adminSession) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+  return <Navigate to="/admin/login" replace />;
+}
+
 function App() {
   return (
     <Routes>
@@ -28,23 +52,23 @@ function App() {
       <Route path="/signup" element={<SignUpPage />} />
 
       {/* Main App Routes */}
-      <Route path="/home" element={<HomePage />} />
-      <Route path="/feed" element={<FeedPage />} />
-      <Route path="/map" element={<MapPage />} />
-      <Route path="/communities" element={<CommunityPage />} />
-      <Route path="/my-posts" element={<MyPosts />} />
-      <Route path="/resources" element={<ResourcePage />} />
-      <Route path="/notifications" element={<NotificationsPage />} />
+      <Route path="/home" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+      <Route path="/feed" element={<ProtectedRoute><FeedPage /></ProtectedRoute>} />
+      <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
+      <Route path="/communities" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
+      <Route path="/my-posts" element={<ProtectedRoute><MyPosts /></ProtectedRoute>} />
+      <Route path="/resources" element={<ProtectedRoute><ResourcePage /></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute><NotificationsPage /></ProtectedRoute>} />
 
       {/* Admin Panel Routes */}
-      <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+      <Route path="/admin" element={<AdminIndexRoute />} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
-      <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
-      <Route path="/admin/users" element={<AdminUsersPage />} />
-      <Route path="/admin/communities" element={<AdminCommunitiesPage />} />
-      <Route path="/admin/categories" element={<AdminCategoriesPage />} />
-      <Route path="/admin/articles" element={<AdminArticlesPage />} />
-      <Route path="/admin/whatsapp" element={<AdminWhatsAppPage />} />
+      <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboardPage /></AdminRoute>} />
+      <Route path="/admin/users" element={<AdminRoute><AdminUsersPage /></AdminRoute>} />
+      <Route path="/admin/communities" element={<AdminRoute><AdminCommunitiesPage /></AdminRoute>} />
+      <Route path="/admin/categories" element={<AdminRoute><AdminCategoriesPage /></AdminRoute>} />
+      <Route path="/admin/articles" element={<AdminRoute><AdminArticlesPage /></AdminRoute>} />
+      <Route path="/admin/whatsapp" element={<AdminRoute><AdminWhatsAppPage /></AdminRoute>} />
 
       {/* Legacy Capitalized Routes Compatibility Redirects */}
       <Route path="/LandingPage" element={<Navigate to="/" replace />} />

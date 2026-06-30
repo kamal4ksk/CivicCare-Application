@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   HiOutlineHeart,
   HiHeart,
@@ -7,8 +7,10 @@ import {
   HiOutlineMap,
   HiPaperAirplane,
 } from 'react-icons/hi2';
+import { toggleLikePost, addComment, getComments } from "../services/postService";
 
 export default function LatestPost({
+  id,
   tag,
   categoryColor,
   title,
@@ -19,33 +21,56 @@ export default function LatestPost({
   image,
   initialLikes,
   commentCount,
+  likes: likesList = []
 }) {
   const avatarLetter = author ? author.charAt(0).toUpperCase() : 'U';
 
-  const [liked, setLiked] = useState(false);
+  const currentUser = useMemo(() => {
+    const saved = localStorage.getItem("user");
+    return saved ? JSON.parse(saved) : null;
+  }, []);
+
+  const [liked, setLiked] = useState(() => {
+    if (!currentUser || !likesList) return false;
+    return likesList.includes(currentUser._id);
+  });
   const [likes, setLikes] = useState(Number(initialLikes) || 0);
   const [showComments, setShowComments] = useState(false);
+  const [comments, setComments] = useState([]);
 
-  const [comments, setComments] = useState(
-    commentCount > 0
-      ? [
-          {
-            author: 'Current User',
-            date: '21/06/2026',
-            text: 'hiiii',
-            avatarBg: 'bg-[#00C853]',
-          },
-        ]
-      : []
-  );
-
-  const handleLike = () => {
-    if (liked) {
-      setLikes((prev) => prev - 1);
-    } else {
-      setLikes((prev) => prev + 1);
+  const loadComments = async () => {
+    try {
+      const response = await getComments(id);
+      const mapped = response.data.map(c => ({
+        author: c.userId?.name || "Anonymous",
+        date: new Date(c.createdAt).toLocaleDateString('en-GB'),
+        text: c.text,
+        avatarBg: 'bg-gradient-to-br from-[#155DFC] to-[#9810FA]',
+      }));
+      setComments(mapped);
+    } catch (error) {
+      console.error("Failed to load comments", error);
     }
-    setLiked(!liked);
+  };
+
+  useEffect(() => {
+    if (showComments && id) {
+      loadComments();
+    }
+  }, [showComments, id]);
+
+  const handleLike = async () => {
+    if (!currentUser) {
+      alert("Please login to react to concerns.");
+      return;
+    }
+    try {
+      const response = await toggleLikePost(id);
+      setLiked(response.data.liked);
+      setLikes(response.data.likesCount);
+    } catch (error) {
+      console.error("Failed to toggle like", error);
+    }
   };
 
   const handleShare = async () => {
@@ -65,25 +90,26 @@ export default function LatestPost({
     }
   };
 
-  const handleCommentSubmit = (e) => {
+  const handleCommentSubmit = async (e) => {
     e.preventDefault();
+    if (!currentUser) {
+      alert("Please login to comment.");
+      return;
+    }
 
     const input = e.target.commentText;
     const value = input.value.trim();
 
     if (!value) return;
 
-    setComments([
-      ...comments,
-      {
-        author: 'Fathima',
-        date: new Date().toLocaleDateString('en-GB'),
-        text: value,
-        avatarBg: 'bg-gradient-to-br from-[#155DFC] to-[#9810FA]',
-      },
-    ]);
-
-    input.value = '';
+    try {
+      await addComment(id, value);
+      input.value = '';
+      loadComments();
+    } catch (error) {
+      console.error("Failed to add comment", error);
+      alert(error.response?.data?.message || "Failed to submit comment");
+    }
   };
 
   return (

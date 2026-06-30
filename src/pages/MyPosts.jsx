@@ -22,6 +22,7 @@ import UserHeader from '../components/UserHeader';
 import MobileNavigation from '../components/MobileNavigation';
 import MobileDrawer from '../components/MobileDrawer';
 import ReportConcernModal from '../components/ReportConcernModal';
+import { getMyPosts, deletePost, updatePost } from "../services/postService";
 
 export default function MyPosts() {
   const navigate = useNavigate();
@@ -49,7 +50,7 @@ export default function MyPosts() {
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setEditPostData(prev => ({ ...prev, photo: reader.result }));
+        setEditPostData(prev => ({ ...prev, photo: reader.result, photoFile: file }));
       };
       reader.readAsDataURL(file);
     }
@@ -57,7 +58,7 @@ export default function MyPosts() {
 
   const removeEditPhoto = (e) => {
     e.stopPropagation();
-    setEditPostData(prev => ({ ...prev, photo: null }));
+    setEditPostData(prev => ({ ...prev, photo: null, photoFile: null, removePhoto: true }));
     if (editFileInputRef.current) {
       editFileInputRef.current.value = '';
     }
@@ -85,67 +86,76 @@ export default function MyPosts() {
     }
   };
 
-  // Load user concerns from localStorage
-const loadConcerns = () => {
-  const saved = localStorage.getItem('civic_care_user_concerns');
-  const loaded = saved ? JSON.parse(saved) : [];
+  // Load user concerns from backend
+  const loadConcerns = async () => {
+    try {
+      const response = await getMyPosts();
+      const normalized = response.data.map(post => ({
+        id: post._id,
+        _id: post._id,
+        category: post.category,
+        title: post.title,
+        description: post.description,
+        location: post.location,
+        photo: post.photo ? `http://localhost:3000${post.photo}` : null,
+        date: new Date(post.createdAt).toLocaleDateString('en-GB'),
+        status: post.status || 'Pending',
+        priority: post.priority || 'Medium priority',
+        likesCount: post.likes ? post.likes.length : 0,
+      }));
+      setUserConcerns(normalized);
+    } catch (error) {
+      console.error("Failed to load concerns", error);
+    }
+  };
 
-  console.log("Loaded Posts:", loaded);
-
-  const normalized = loaded.map(post => ({
-    ...post,
-    status: post.status || 'Pending',
-    priority: post.priority || 'medium priority'
-  }));
-
-  setUserConcerns(normalized);
-};
   useEffect(() => {
     loadConcerns();
   }, []);
 
-  const handlePostConcernSubmit = (newConcern) => {
-    const concernWithMeta = {
-      id: Date.now(),
-      category: newConcern.category,
-      title: newConcern.title,
-      description: newConcern.description,
-      location: newConcern.location,
-      photo: newConcern.photo,
-      date: new Date().toLocaleDateString('en-GB'),
-      status: 'Pending',
-      priority: 'medium priority'
-    };
-
-    const updated = [concernWithMeta, ...userConcerns];
-    localStorage.setItem('civic_care_user_concerns', JSON.stringify(updated));
-    setUserConcerns(updated);
-    setIsReportModalOpen(false);
-  };
-
-  const handleDeletePost = (id) => {
+  const handleDeletePost = async (id) => {
     const confirmDelete = window.confirm('Are you sure you want to delete this concern?');
     if (confirmDelete) {
-      const updated = userConcerns.filter(post => post.id !== id);
-      localStorage.setItem('civic_care_user_concerns', JSON.stringify(updated));
-      setUserConcerns(updated);
-      if (selectedPost?.id === id) setIsViewOpen(false);
+      try {
+        const token = localStorage.getItem("token");
+        await deletePost(id, token);
+        loadConcerns();
+        if (selectedPost?.id === id) setIsViewOpen(false);
+      } catch (error) {
+        console.error("Failed to delete concern", error);
+        alert(error.response?.data?.message || "Failed to delete concern");
+      }
     }
   };
 
-  const handleEditSubmit = (e) => {
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editPostData.title.trim() || !editPostData.location.trim() || !editPostData.description.trim()) {
       alert("Please fill in all fields.");
       return;
     }
 
-    const updated = userConcerns.map(post => 
-      post.id === editPostData.id ? { ...post, ...editPostData } : post
-    );
-    localStorage.setItem('civic_care_user_concerns', JSON.stringify(updated));
-    setUserConcerns(updated);
-    setIsEditOpen(false);
+    try {
+      const token = localStorage.getItem("token");
+      const formData = new FormData();
+      formData.append("title", editPostData.title);
+      formData.append("category", editPostData.category);
+      formData.append("location", editPostData.location);
+      formData.append("description", editPostData.description);
+      if (editPostData.photoFile) {
+        formData.append("photo", editPostData.photoFile);
+      } else if (editPostData.removePhoto) {
+        formData.append("removePhoto", "true");
+      }
+
+      await updatePost(editPostData.id, formData, token);
+      alert("Post updated successfully!");
+      setIsEditOpen(false);
+      loadConcerns();
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Failed to update post");
+    }
   };
 
   // Metrics calculations
@@ -363,7 +373,7 @@ const loadConcerns = () => {
     <img
       src={post.photo}
       alt="Concern"
-      className="max-w-full h-auto rounded-2xl border border-slate-200 shadow-sm"
+      className="max-w-[320px] max-h-[180px] object-cover rounded-2xl border border-slate-200 shadow-sm"
     />
   </div>
 )}
@@ -450,7 +460,7 @@ const loadConcerns = () => {
       {isReportModalOpen && (
         <ReportConcernModal
           onClose={() => setIsReportModalOpen(false)}
-          onSubmit={handlePostConcernSubmit}
+          refreshPosts={loadConcerns}
         />
       )}
 

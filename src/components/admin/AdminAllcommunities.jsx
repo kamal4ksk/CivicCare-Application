@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { AdminCommunitySummary } from './AdminCommunitysummary';
 import { AdminCommunityList } from './AdminCommunitylist';
 import { AdminCommunityMembersModal } from './AdminCommunitymembers';
 import { AdminCreateCommunityModal } from './AdminCreatecommunity';
 import { AdminEditCommunityModal } from './AdminEditCommunity';
+import { getCommunities, createCommunity, updateCommunity, deleteCommunity } from '../../services/communityService';
 
 const CATEGORY_OPTIONS = [
   'All Categories', 'General', 'Roads', 'Water',
@@ -16,13 +17,53 @@ const CATEGORY_OPTIONS = [
  * Matches image 2: table layout, pill status filter, category dropdown.
  */
 export function AdminAllCommunitiesPage({ initialCommunities = exampleCommunities }) {
-  const [communities, setCommunities] = useState(initialCommunities);
+  const [communities, setCommunities] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('All Categories');
   const [statusFilter, setStatusFilter] = useState('All');   // 'All' | 'Active' | 'Inactive'
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingCommunity, setEditingCommunity] = useState(null);
   const [membersCommunity, setMembersCommunity] = useState(null);
+
+  const fetchCommunities = async () => {
+    try {
+      const response = await getCommunities();
+      const mapped = response.data.map(comm => ({
+        id: comm._id,
+        _id: comm._id,
+        name: comm.name,
+        emoji: comm.icon || '🏡',
+        cover: comm.color || 'from-purple-500 to-indigo-600',
+        description: comm.description,
+        creator: comm.creatorId?.name || 'Admin User',
+        category: comm.category,
+        location: comm.location,
+        createdAt: new Date(comm.createdAt),
+        isActive: comm.isActive,
+        isPrivate: !comm.isOfficial,
+        membersCount: comm.members ? comm.members.filter(Boolean).length : 0,
+        members: comm.members ? comm.members.filter(Boolean).map(m => ({
+          id: m._id,
+          name: m.name || 'Citizen User',
+          email: m.email || '',
+          isAdmin: m.role === 'admin' || m._id === comm.creatorId?._id,
+          joinedAt: comm.createdAt ? new Date(comm.createdAt) : new Date()
+        })) : []
+      }));
+
+      const allComms = [
+        ...mapped,
+        ...exampleCommunities.filter(c => !mapped.some(m => m.name === c.name))
+      ];
+      setCommunities(allComms);
+    } catch (error) {
+      console.error("Failed to load communities in admin", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCommunities();
+  }, []);
 
   const filtered = communities.filter((c) => {
     const q = searchQuery.toLowerCase();
@@ -39,35 +80,73 @@ export function AdminAllCommunitiesPage({ initialCommunities = exampleCommunitie
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
-  const handleCreate = (community) => {
-    setCommunities((prev) => [
-      {
-        ...community,
-        id: `comm-${Date.now()}`,
-        creator: 'Admin User',
-        isActive: true,
-        createdAt: new Date(),
-        membersCount: 1,
-        members: [{
-          id: `m-${Date.now()}`,
-          name: 'Admin User',
-          email: 'admin@civiccare.com',
-          isAdmin: true,
-          joinedAt: new Date(),
-        }],
-      },
-      ...prev,
-    ]);
+  const handleCreate = async (community) => {
+    try {
+      const token = localStorage.getItem("token");
+      const communityData = {
+        name: community.name,
+        description: community.description,
+        category: community.category,
+        location: community.location,
+        icon: community.emoji || "🏡",
+        color: community.cover || "from-purple-500 to-indigo-600",
+        isOfficial: !community.isPrivate
+      };
+
+      await createCommunity(communityData, token);
+      alert("Community created successfully!");
+      fetchCommunities();
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Failed to create community");
+    }
   };
 
-  const handleUpdate = (id, updates) => {
-    setCommunities((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
-    );
+  const handleUpdate = async (id, updates) => {
+    try {
+      if (typeof id === 'number' || id.startsWith('comm-')) {
+        setCommunities((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, ...updates } : c))
+        );
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      const communityData = {
+        name: updates.name,
+        description: updates.description,
+        category: updates.category,
+        location: updates.location,
+        icon: updates.emoji,
+        color: updates.cover,
+        isActive: updates.isActive
+      };
+
+      await updateCommunity(id, communityData, token);
+      fetchCommunities();
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Failed to update community");
+    }
   };
 
-  const handleDelete = (id) => {
-    setCommunities((prev) => prev.filter((c) => c.id !== id));
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this community?");
+    if (!confirmDelete) return;
+
+    try {
+      if (typeof id === 'number' || id.startsWith('comm-')) {
+        setCommunities((prev) => prev.filter((c) => c.id !== id));
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      await deleteCommunity(id, token);
+      fetchCommunities();
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Failed to delete community");
+    }
   };
 
   const handleRemoveMember = (communityId, memberId) => {

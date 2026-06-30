@@ -56,3 +56,44 @@ export const deletePost = async (id, token) => {
 
   return response;
 };
+
+// =========================
+// Toggle Like Post
+// =========================
+export const toggleLikePost = async (id) => {
+  const response = await api.post(`/posts/${id}/like`);
+  return response;
+};
+
+// =========================
+// Add Comment
+// =========================
+export const addComment = async (postId, text) => {
+  const response = await api.post(`/comments/${postId}`, { text });
+  return response;
+};
+
+// =========================
+// Get Comments
+// =========================
+export const getComments = async (postId) => {
+  const response = await api.get(`/comments/${postId}`);
+  return response;
+};
+
+// =========================
+// Delete Comment
+// =========================
+export const deleteComment = async (commentId) => {
+  const response = await api.delete(`/comments/comment/${commentId}`);
+  return response;
+};
+
+// =========================
+// Get My Posts
+// =========================
+export const getMyPosts = async () => {
+  const response = await api.get("/posts/my-posts");
+  return response;
+};
+

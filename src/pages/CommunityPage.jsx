@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UserHeader from "../components/UserHeader";
 import CommunityHeader from "../components/CommunityHeader";
 import CommunitySummary from "../components/CommunitySummary";
 import Communities from "../components/Communities";
 import { HiXMark, HiOutlinePlus, HiCheck, HiOutlineUsers } from "react-icons/hi2";
+import { getCommunities, createCommunity, joinLeaveCommunity } from "../services/communityService";
 
 const getMemberDetail = (initial, community) => {
   const details = {
@@ -96,7 +97,7 @@ const PRESET_THEMES = [
 const PRESET_ICONS = ["🏡", "🌱", "🛣️", "🚓", "🏥", "📚", "🚌", "🌐"];
 
 export default function CommunityPage() {
-  const [communities, setCommunities] = useState(INITIAL_COMMUNITIES);
+  const [communities, setCommunities] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -111,70 +112,122 @@ export default function CommunityPage() {
   const [newTheme, setNewTheme] = useState("from-purple-500 to-indigo-600");
   const [formError, setFormError] = useState("");
 
-  const handleJoinToggle = (id) => {
-    setCommunities(prev =>
-      prev.map(comm => {
-        if (comm.id === id) {
-          const alreadyJoined = comm.joined;
-          let updatedMembers = [...comm.members];
-          
-          if (alreadyJoined) {
-            // Leave: remove 'D' (Demo User) from members
-            updatedMembers = updatedMembers.filter(m => m !== 'D');
-          } else {
-            // Join: add 'D' to members if not already present
-            if (!updatedMembers.includes('D')) {
-              updatedMembers.push('D');
-            }
-          }
-          
-          return {
-            ...comm,
-            joined: !alreadyJoined,
-            members: updatedMembers
-          };
-        }
-        return comm;
-      })
-    );
+  const loadCommunities = async () => {
+    try {
+      const response = await getCommunities();
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      
+      const mapped = response.data.map(comm => {
+        const isJoined = (comm.members || []).some(m => m && (m._id === currentUser._id || m === currentUser._id));
+        const membersMapped = (comm.members || []).map(m => (m && m.name) ? m.name.charAt(0).toUpperCase() : "U");
+
+        return {
+          id: comm._id,
+          name: comm.name,
+          category: comm.category,
+          description: comm.description,
+          location: comm.location,
+          dateCreated: comm.createdAt ? new Date(comm.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : "Jan 2026",
+          type: comm.isOfficial ? "Official" : "Public",
+          members: membersMapped,
+          joined: isJoined,
+          icon: comm.icon || "🏡",
+          color: comm.color || "from-purple-500 to-indigo-600",
+          _id: comm._id
+        };
+      });
+
+      const allComms = [
+        ...mapped,
+        ...INITIAL_COMMUNITIES.filter(c => !mapped.some(m => m.name === c.name))
+      ];
+      setCommunities(allComms);
+    } catch (error) {
+      console.error("Failed to load communities", error);
+    }
   };
 
-  const handleCreateCommunity = (e) => {
+  useEffect(() => {
+    loadCommunities();
+  }, []);
+
+  const handleJoinToggle = async (id) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please login to join communities.");
+        return;
+      }
+
+      if (typeof id === 'number') {
+        setCommunities(prev =>
+          prev.map(comm => {
+            if (comm.id === id) {
+              const alreadyJoined = comm.joined;
+              let updatedMembers = [...comm.members];
+              if (alreadyJoined) {
+                updatedMembers = updatedMembers.filter(m => m !== 'D');
+              } else {
+                if (!updatedMembers.includes('D')) updatedMembers.push('D');
+              }
+              return { ...comm, joined: !alreadyJoined, members: updatedMembers };
+            }
+            return comm;
+          })
+        );
+        return;
+      }
+
+      await joinLeaveCommunity(id, token);
+      loadCommunities();
+    } catch (error) {
+      console.error("Failed to toggle join", error);
+    }
+  };
+
+  const handleCreateCommunity = async (e) => {
     e.preventDefault();
     if (!newName.trim() || !newDescription.trim() || !newLocation.trim()) {
       setFormError("Please fill out all required fields.");
       return;
     }
 
-    const newComm = {
-      id: Date.now(),
-      name: newName,
-      category: newCategory,
-      description: newDescription,
-      location: newLocation,
-      dateCreated: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
-      type: newType,
-      members: ["D"], // Starts with the current user Demo User
-      joined: true,
-      icon: newIcon,
-      color: newTheme
-    };
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("Please login to create communities.");
+        return;
+      }
 
-    setCommunities(prev => [newComm, ...prev]);
-    setIsModalOpen(false);
-    
-    // Reset modal active state
-    setActiveMembersCommunity(null);
+      const communityData = {
+        name: newName,
+        description: newDescription,
+        category: newCategory,
+        location: newLocation,
+        icon: newIcon,
+        color: newTheme,
+        isOfficial: newType === "Official"
+      };
 
-    // Reset Form
-    setNewName("");
-    setNewDescription("");
-    setNewLocation("");
-    setNewCategory("General");
-    setNewType("Public");
-    setNewIcon("🏡");
-    setNewTheme("from-purple-500 to-indigo-600");
-    setFormError("");
+      await createCommunity(communityData, token);
+      alert("Community created successfully!");
+      setIsModalOpen(false);
+      
+      // Reset Form
+      setNewName("");
+      setNewDescription("");
+      setNewLocation("");
+      setNewCategory("General");
+      setNewType("Public");
+      setNewIcon("🏡");
+      setNewTheme("from-purple-500 to-indigo-600");
+      setFormError("");
+
+      loadCommunities();
+    } catch (error) {
+      console.error(error);
+      setFormError(error.response?.data?.message || "Failed to create community");
+    }
   };
 
   const [activeMembersCommunity, setActiveMembersCommunity] = useState(null);

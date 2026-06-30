@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { AdminArticleCard } from './AdminArticlecard';
 import { CreateArticleModal } from './CreateArticle';
 import { EditArticleModal } from './EditArticlemodal';
+import { getArticles, createArticle, updateArticle, deleteArticle } from '../../services/articleService';
 
 /**
  * Component 112 - Article Management (page)
@@ -13,10 +14,40 @@ import { EditArticleModal } from './EditArticlemodal';
  *  - initialArticles?: array (see 113_AdminArticleCard for shape)
  */
 export function ArticleManagementPage({ initialArticles = exampleArticles }) {
-  const [articles, setArticles] = useState(initialArticles);
+  const [articles, setArticles] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingArticle, setEditingArticle] = useState(null);
+
+  const fetchArticles = async () => {
+    try {
+      const response = await getArticles();
+      const dbArticles = response.data.map(art => ({
+        id: art._id,
+        _id: art._id,
+        title: art.title,
+        category: art.category,
+        description: art.description,
+        content: art.content,
+        imageUrl: art.imageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400',
+        createdAt: new Date(art.createdAt)
+      }));
+
+      const merged = [
+        ...dbArticles,
+        ...exampleArticles.filter(e => !dbArticles.some(d => d.title === e.title))
+      ];
+
+      setArticles(merged);
+    } catch (error) {
+      console.error("Failed to fetch articles in admin dashboard", error);
+      setArticles(exampleArticles);
+    }
+  };
+
+  useEffect(() => {
+    fetchArticles();
+  }, []);
 
   const filtered = articles.filter(
     (a) =>
@@ -24,19 +55,67 @@ export function ArticleManagementPage({ initialArticles = exampleArticles }) {
       a.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreate = (article) => {
-    setArticles((prev) => [
-      { ...article, id: `art-${Date.now()}`, createdAt: new Date(), imageUrl: article.imageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400' },
-      ...prev,
-    ]);
+  const handleCreate = async (article) => {
+    try {
+      const token = localStorage.getItem("token");
+      const articleData = {
+        title: article.title,
+        description: article.description,
+        category: article.category,
+        content: article.content || "",
+        imageUrl: article.imageUrl || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400'
+      };
+
+      await createArticle(articleData, token);
+      alert("Article created successfully!");
+      fetchArticles();
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Failed to create article");
+    }
   };
 
-  const handleUpdate = (id, updates) => {
-    setArticles((prev) => prev.map((a) => (a.id === id ? { ...a, ...updates } : a)));
+  const handleUpdate = async (id, updates) => {
+    try {
+      if (id.startsWith('art-')) {
+        setArticles((prev) => prev.map((a) => (a.id === id ? { ...a, ...updates } : a)));
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      const articleData = {
+        title: updates.title,
+        description: updates.description,
+        category: updates.category,
+        content: updates.content,
+        imageUrl: updates.imageUrl
+      };
+
+      await updateArticle(id, articleData, token);
+      fetchArticles();
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Failed to update article");
+    }
   };
 
-  const handleDelete = (id) => {
-    setArticles((prev) => prev.filter((a) => a.id !== id));
+  const handleDelete = async (id) => {
+    const confirmDelete = window.confirm("Are you sure you want to delete this article?");
+    if (!confirmDelete) return;
+
+    try {
+      if (id.startsWith('art-')) {
+        setArticles((prev) => prev.filter((a) => a.id !== id));
+        return;
+      }
+
+      const token = localStorage.getItem("token");
+      await deleteArticle(id, token);
+      fetchArticles();
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Failed to delete article");
+    }
   };
 
   return (

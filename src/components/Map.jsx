@@ -14,6 +14,7 @@ function Map({
   mapView,
   selectedDistrict,
   setSelectedDistrict,
+  className = "relative z-0 h-[450px] md:h-[720px] rounded-b-2xl md:rounded-b-none md:rounded-r-2xl overflow-hidden"
 }) {
 
   const [districts, setDistricts] = useState(null);
@@ -635,7 +636,7 @@ function Map({
 
 
   return (
-    <div className="relative z-0 h-[450px] md:h-[720px] rounded-b-2xl md:rounded-b-none md:rounded-r-2xl overflow-hidden">
+    <div className={className}>
       <MapContainer
         center={[10.5605, 76.3911]}
         zoom={8}

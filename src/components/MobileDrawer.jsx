@@ -18,6 +18,10 @@ export default function MobileDrawer({
   onTabClick,
 }) {
   const navigate = useNavigate();
+  const currentUser = React.useMemo(() => {
+    const saved = localStorage.getItem("user");
+    return saved ? JSON.parse(saved) : null;
+  }, []);
 
   if (!isOpen) return null;
 
@@ -70,6 +74,8 @@ export default function MobileDrawer({
 
     if (confirmLogout) {
       onClose();
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
       navigate('/signin');
     }
   };
@@ -114,13 +120,13 @@ export default function MobileDrawer({
             </div>
 
             <div>
-              <h3 className="font-bold text-slate-800">Fathima</h3>
+              <h3 className="font-bold text-slate-800">{currentUser ? currentUser.name : "Fathima"}</h3>
               <p className="text-xs text-slate-400">
-                fathima@civiccare.local
+                {currentUser ? currentUser.email : "fathima@civiccare.local"}
               </p>
 
               <span className="inline-block mt-2 px-2 py-0.5 rounded-full bg-[#F2EFFF] text-[#7D5DF2] text-[10px] font-bold uppercase">
-                Citizen
+                {currentUser ? currentUser.role : "Citizen"}
               </span>
             </div>
           </div>
@@ -173,7 +179,10 @@ export default function MobileDrawer({
 
           {/* Admin */}
           <button
-            onClick={onClose}
+            onClick={() => {
+              onClose();
+              navigate('/admin/login');
+            }}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-100"
           >
             <HiOutlineShieldCheck className="w-5 h-5 text-slate-400" />

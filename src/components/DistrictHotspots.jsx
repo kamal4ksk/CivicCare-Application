@@ -4,6 +4,7 @@ import { FiLayers } from 'react-icons/fi';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import DistrictHotspotCard from './DistrictHotspotCard';
+import Map from "./Map";
 
 // Setup Mapbox Token
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN || '';
@@ -265,55 +266,12 @@ export default function DistrictHotspots() {
           {/* LEFT COLUMN: Map Card Viewport */}
           <div id="map-viewport-container" className="lg:col-span-5 flex flex-col w-full">
             <div className="w-full relative aspect-[3/4] bg-white border-8 border-white shadow-[0_15px_40px_-15px_rgba(0,0,0,0.06)] rounded-[32px] overflow-hidden flex flex-col">
-              {MAPBOX_TOKEN ? (
-                <>
-                  <div ref={mapContainerRef} className="w-full flex-1" />
-                  <div className="absolute top-4 left-4 z-10">
-                    <button
-                      onClick={() => setShowStyleMenu(!showStyleMenu)}
-                      className="flex items-center gap-1.5 px-3 py-2 bg-white/95 backdrop-blur-md border border-slate-100 shadow-sm rounded-xl text-slate-700 hover:text-slate-900 font-semibold text-xs"
-                    >
-                      <FiLayers className="w-3.5 h-3.5" />
-                      <span>Map Layers</span>
-                    </button>
-                    {showStyleMenu && (
-                      <div className="absolute top-full left-0 mt-2 w-40 bg-white border border-slate-100 shadow-md rounded-xl p-1 z-20">
-                        <button onClick={() => { setMapStyle('mapbox://styles/mapbox/streets-v12'); setShowStyleMenu(false); }} className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg ${mapStyle.includes('streets') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}>Streets Style</button>
-                        <button onClick={() => { setMapStyle('mapbox://styles/mapbox/dark-v11'); setShowStyleMenu(false); }} className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg ${mapStyle.includes('dark') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}>Snapchat Dark</button>
-                        <button onClick={() => { setMapStyle('mapbox://styles/mapbox/light-v11'); setShowStyleMenu(false); }} className={`w-full text-left px-3 py-2 text-xs font-bold rounded-lg ${mapStyle.includes('light') ? 'bg-slate-100 text-slate-900' : 'text-slate-600'}`}>Minimal Light</button>
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="w-full flex-1 bg-slate-50 relative flex flex-col justify-center items-center p-6 overflow-hidden">
-                  <div className="relative w-auto h-full max-h-[380px] flex justify-center items-center">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/1/18/Districts_of_Kerala.png" alt="Kerala Districts Fallback" className="w-auto h-full object-contain opacity-80 select-none mix-blend-multiply" />
-                    {districtsData.map((d) => (
-                      <div key={d.rank} className="absolute z-10 cursor-pointer flex flex-col items-center group transition-transform duration-200 hover:scale-110" style={{ top: d.top, left: d.left }} onClick={() => setSelectedDistrict(d.name)}>
-                        <div className="relative flex h-4 w-4 items-center justify-center">
-                          <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${d.name === selectedDistrict ? 'bg-red-400 ring-4 ring-red-400/20' : 'bg-orange-400'}`}></span>
-                          <span className={`relative inline-flex rounded-full h-3 w-3 shadow-md border-2 border-white ${d.name === selectedDistrict ? 'bg-red-600' : 'bg-orange-500'}`}></span>
-                        </div>
-                        <div className={`absolute bottom-full mb-2 whitespace-nowrap bg-slate-900 text-white rounded-lg px-2 py-1 text-[10px] font-bold shadow-lg opacity-0 transition-opacity pointer-events-none group-hover:opacity-100 ${d.name === selectedDistrict ? 'opacity-100' : ''}`}>
-                          <div className="text-center">
-                            <div>{d.name}</div>
-                            <div className="text-red-400 font-extrabold">{d.reports}</div>
-                          </div>
-                          <div className="w-1.5 h-1.5 bg-slate-900 absolute top-full left-1/2 -translate-x-1/2 rotate-45" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="absolute inset-x-4 bottom-4 bg-white/95 backdrop-blur-xs border border-amber-200 shadow-md rounded-2xl p-4 flex gap-3 z-20">
-                    <HiOutlineInformationCircle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-xs font-bold text-slate-800">Mapbox Token Required</h4>
-                      <p className="text-[10px] text-slate-500 leading-normal mt-0.5">Please insert your `VITE_MAPBOX_ACCESS_TOKEN` in the `.env` file to activate the live map.</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <Map
+                mapView="district"
+                selectedDistrict={selectedDistrict}
+                setSelectedDistrict={setSelectedDistrict}
+                className="w-full h-full relative z-0"
+              />
             </div>
 
             <div className="mt-6 px-2">

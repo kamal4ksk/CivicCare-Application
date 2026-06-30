@@ -17,6 +17,8 @@ export default function SignUpPage() {
   password: "",
   confirmPassword: "",
 });
+
+
 const handleChange = (e) => {
   setFormData({
     ...formData,
@@ -87,11 +89,11 @@ const handleRegister = async () => {
         </div>
 
         {/* Signup Card */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-[32px] border border-white shadow-[0_25px_80px_-15px_rgba(0,0,0,0.08)] p-6 sm:p-8">
+        <form onSubmit={(e) => { e.preventDefault(); handleRegister(); }} className="bg-white/90 backdrop-blur-sm rounded-[32px] border border-white shadow-[0_25px_80px_-15px_rgba(0,0,0,0.08)] p-6 sm:p-8">
 
           {/* Full Name */}
           <div className="mb-5">
-            <label className="block mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
               Full Name
             </label>
 
@@ -103,7 +105,7 @@ const handleRegister = async () => {
   name="name"
   value={formData.name}
   onChange={handleChange}
-  placeholder="Your full name"
+  placeholder="John Doe"
                 className="w-full h-14 pl-12 pr-4 rounded-2xl border border-slate-200 bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
               />
             </div>
@@ -111,7 +113,7 @@ const handleRegister = async () => {
 
           {/* Email */}
           <div className="mb-5">
-            <label className="block mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
               Email Address
             </label>
 
@@ -131,7 +133,7 @@ const handleRegister = async () => {
 
           {/* Password */}
           <div className="mb-5">
-            <label className="block mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
               Password
             </label>
 
@@ -143,7 +145,7 @@ const handleRegister = async () => {
   name="password"
   value={formData.password}
   onChange={handleChange}
-  placeholder="Minimum 6 characters"
+  placeholder="Choose a strong password"
                 className="w-full h-14 pl-12 pr-4 rounded-2xl border border-slate-200 bg-white focus:border-purple-500 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
               />
             </div>
@@ -151,7 +153,7 @@ const handleRegister = async () => {
 
           {/* Confirm Password */}
           <div>
-            <label className="block mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-2">
               Confirm Password
             </label>
 
@@ -191,7 +193,7 @@ const handleRegister = async () => {
 
           {/* Create Account Button */}
           <button
-  onClick={handleRegister}
+            type="submit"
             className="w-full h-14 rounded-2xl bg-gradient-to-r from-[#2b7fff] to-[#9810fa] text-white font-bold flex items-center justify-center gap-2 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 cursor-pointer"
           >
             Create Account
@@ -208,7 +210,7 @@ const handleRegister = async () => {
           </div>
 
           {/* Google Button */}
-         <button className="w-full h-14 rounded-2xl border border-slate-200 bg-white flex items-center justify-center gap-3 hover:bg-slate-50 transition-all">
+         <button type="button" className="w-full h-14 rounded-2xl border border-slate-200 bg-white flex items-center justify-center gap-3 hover:bg-slate-50 transition-all">
   <img
     src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
     alt="Google"
@@ -231,7 +233,7 @@ const handleRegister = async () => {
             </Link>
           </p>
 
-        </div>
+        </form>
       </div>
     </div>
   );

@@ -14,6 +14,7 @@ import {
 } from 'react-icons/hi2';
 import { getNotifications, saveNotifications } from '../utils/notifications';
 import { Bell } from "lucide-react";
+import ReportConcernModal from "./ReportConcernModal";
 
 // Global module-scope tracking variable to retain tab state across unmounts/mounts
 let lastTabIndex = null;
@@ -27,6 +28,10 @@ export default function UserHeader({ onMenuClick }) {
   const [locationInput, setLocationInput] = React.useState("");
   const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false);
   const [isAccountOpen, setIsAccountOpen] = React.useState(false);
+  const [currentUser, setCurrentUser] = React.useState(() => {
+    const saved = localStorage.getItem("user");
+    return saved ? JSON.parse(saved) : null;
+  });
  
  const [notifications, setNotifications] = React.useState(() => getNotifications());
 
@@ -380,18 +385,18 @@ ${notification.unread
               className="flex items-center space-x-2.5 cursor-pointer group select-none focus:outline-none"
             >
               <div className="w-[36px] h-[36px] rounded-full bg-gradient-to-br from-[#155DFC] to-[#9810FA] flex items-center justify-center text-white text-xs font-black tracking-tight shadow-2xs transition-transform duration-500 group-hover:scale-105">
-                DU
+                {currentUser ? currentUser.name.charAt(0).toUpperCase() : "DU"}
               </div>
               <span className="text-sm font-bold text-slate-700 group-hover:text-slate-900 hidden sm:inline max-w-[140px] truncate transition-colors duration-500">
-                Demo User
+                {currentUser ? currentUser.name : "Demo User"}
               </span>
             </button>
 
             {isAccountOpen && (
               <div className="absolute right-0 mt-2 w-[220px] rounded-3xl bg-white border border-slate-200 shadow-2xl overflow-hidden z-50">
                 <div className="px-4 py-4 border-b border-slate-100">
-                  <p className="text-sm font-bold text-slate-900">Demo User</p>
-                  <p className="text-[11px] text-slate-500">demo@gmail.com</p>
+                  <p className="text-sm font-bold text-slate-900">{currentUser ? currentUser.name : "Demo User"}</p>
+                  <p className="text-[11px] text-slate-500">{currentUser ? currentUser.email : "demo@gmail.com"}</p>
                 </div>
                 <div className="flex flex-col py-2">
                   <button
@@ -409,7 +414,7 @@ ${notification.unread
                     className="text-left px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
                     onClick={() => {
                       setIsAccountOpen(false);
-                      navigate('/admin');
+                      navigate('/admin/login');
                     }}
                   >
                     Admin Panel
@@ -419,7 +424,12 @@ ${notification.unread
                   <button
                     type="button"
                     className="w-full text-left text-sm font-bold text-red-600 hover:bg-slate-50 px-3 py-2 rounded-xl transition-colors"
-                    onClick={() => setIsAccountOpen(false)}
+                    onClick={() => {
+                      setIsAccountOpen(false);
+                      localStorage.removeItem("token");
+                      localStorage.removeItem("user");
+                      navigate('/signin');
+                    }}
                   >
                     Logout
                   </button>
@@ -464,136 +474,13 @@ ${notification.unread
       </div>
       {/* Report a Concern Modal */}
       {isReportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-300">
-          <div className="absolute inset-0 cursor-default" onClick={() => { setIsReportModalOpen(false); setLocationInput(""); }} />
-          <div className="bg-white rounded-3xl w-full max-w-lg overflow-hidden relative shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] z-10 animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between text-left">
-              <h3 className="text-base font-bold text-slate-800">Report a Concern</h3>
-              <button 
-                type="button"
-                onClick={() => { setIsReportModalOpen(false); setLocationInput(""); }}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 cursor-pointer focus:outline-none"
-              >
-                <HiXMark className="w-5.5 h-5.5" />
-              </button>
-            </div>
-            
-            {/* Body */}
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              setIsReportModalOpen(false);
-              setLocationInput("");
-              setToastMessage("Report submitted successfully! 🚀");
-              setTimeout(() => setToastMessage(null), 3000);
-            }} className="p-5 overflow-y-auto flex flex-col gap-4 text-left">
-              {/* Category */}
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Category</label>
-                <select className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all">
-                  <option value="Other">Other</option>
-                  <option value="Infrastructure">Infrastructure</option>
-                  <option value="Water">Water</option>
-                  <option value="Electricity">Electricity</option>
-                  <option value="Garbage">Garbage</option>
-                  <option value="Corruption">Corruption</option>
-                  <option value="Safety">Safety</option>
-                </select>
-              </div>
-
-              {/* Title */}
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Title</label>
-                <input 
-                  type="text"
-                  required
-                  placeholder="Brief title for your concern"
-                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all"
-                />
-              </div>
-
-              {/* Location */}
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Location</label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <HiOutlineMapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 stroke-[2.5]" />
-                    <input 
-                      type="text"
-                      required
-                      value={locationInput}
-                      onChange={(e) => setLocationInput(e.target.value)}
-                      placeholder="e.g., Main Street, Downtown"
-                      className="w-full pl-9 pr-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all"
-                    />
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={() => {
-                      if (navigator.geolocation) {
-                        navigator.geolocation.getCurrentPosition(
-                          (position) => {
-                            setLocationInput(`Kochi, Kerala (${position.coords.latitude.toFixed(4)}, ${position.coords.longitude.toFixed(4)})`);
-                          },
-                          (error) => {
-                            setLocationInput("Vyttila, Kochi, Ernakulam");
-                          }
-                        );
-                      } else {
-                        setLocationInput("Vyttila, Kochi, Ernakulam");
-                      }
-                    }}
-                    className="px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 flex items-center gap-1.5 active:scale-98 transition-all focus:outline-none shrink-0"
-                  >
-                    <span className="transform rotate-45 flex items-center">
-                      <HiOutlinePaperAirplane className="w-3.5 h-3.5 stroke-[2.5]" />
-                    </span>
-                    GPS
-                  </button>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Description</label>
-                <textarea 
-                  required
-                  placeholder="Describe the issue in detail..."
-                  className="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder-slate-400 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/20 transition-all min-h-[90px] resize-none"
-                />
-              </div>
-
-              {/* Add Photo */}
-              <div className="flex flex-col">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-1.5">Add Photo (Optional)</label>
-                <div className="border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center cursor-pointer hover:bg-slate-50/50 hover:border-slate-300 transition-all flex flex-col items-center justify-center gap-1.5 select-none">
-                  <div className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 border border-slate-100">
-                    <HiOutlinePhoto className="w-5 h-5 stroke-[2]" />
-                  </div>
-                  <span className="text-xs font-bold text-slate-700">Click to upload photo</span>
-                  <span className="text-[10px] text-slate-400 font-semibold">PNG, JPG up to 10MB</span>
-                </div>
-              </div>
-
-              {/* Footer Buttons */}
-              <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-2">
-                <button 
-                  type="button"
-                  onClick={() => { setIsReportModalOpen(false); setLocationInput(""); }}
-                  className="px-5 py-2.5 border border-slate-200 hover:bg-slate-50 rounded-xl text-xs font-bold text-slate-600 active:scale-98 transition-all cursor-pointer focus:outline-none"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  className="px-5 py-2.5 bg-gradient-to-r from-[#155DFC] to-[#9810FA] hover:opacity-95 rounded-xl text-xs font-bold text-white active:scale-98 transition-all cursor-pointer focus:outline-none"
-                >
-                  Submit Report
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ReportConcernModal
+          onClose={() => setIsReportModalOpen(false)}
+          refreshPosts={async () => {
+            // Reload page dynamically to refresh post queries on feed page, homepage, or my-posts page
+            window.location.reload();
+          }}
+        />
       )}
 
       {/* Toast Notification */}

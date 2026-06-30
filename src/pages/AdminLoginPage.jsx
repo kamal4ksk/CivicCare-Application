@@ -14,7 +14,7 @@ export default function AdminLoginPage() {
         sessionStorage.setItem('civiccare_admin', JSON.stringify(adminUser));
         navigate('/admin');
       }}
-      onBack={() => navigate('/')}
+      onBack={() => navigate('/signin')}
     />
   );
 }

@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UserHeader from "../components/UserHeader";
+import { getArticles } from "../services/articleService";
 import { 
   HiOutlineBookOpen, 
   HiOutlinePhone, 
@@ -103,10 +104,38 @@ const HELPFUL_GUIDES = [
 ];
 
 export default function ResourcePage() {
+  const [articles, setArticles] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeGuide, setActiveGuide] = useState(null);
   const [activeArticle, setActiveArticle] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const response = await getArticles();
+        const dbArticles = response.data.map(art => ({
+          id: art._id,
+          title: art.title,
+          category: art.category,
+          description: art.description,
+          date: art.createdAt ? new Date(art.createdAt).toLocaleDateString() : "5/15/2026",
+          image: art.imageUrl || "https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=400",
+          content: art.content
+        }));
+
+        const merged = [
+          ...dbArticles,
+          ...FEATURED_ARTICLES.filter(f => !dbArticles.some(d => d.title === f.title))
+        ];
+        setArticles(merged);
+      } catch (error) {
+        console.error("Failed to load articles", error);
+        setArticles(FEATURED_ARTICLES);
+      }
+    };
+    fetchArticles();
+  }, []);
 
   // Simulated calling action
   const triggerCall = (phone, serviceName) => {
@@ -124,7 +153,7 @@ export default function ResourcePage() {
   };
 
   // Search logic
-  const filteredArticles = FEATURED_ARTICLES.filter(
+  const filteredArticles = articles.filter(
     (art) =>
       art.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       art.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
